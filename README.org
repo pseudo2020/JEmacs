@@ -1,0 +1,332 @@
+#+TITLE: Emacs Config
+#+PROPERTY: header-args :tangle init.el
+
+This is my GNU Emacs configuration file - codenamed  JEmacs.
+
+* Startup
+** Garbage collection
+#+begin_src emacs-lisp
+  ;; Minimize garbage collection during startup
+  (setq gc-cons-threshold most-positive-fixnum)
+#+end_src
+** Performance profiling
+#+begin_src emacs-lisp
+;; Profile emacs startup
+(add-hook 'emacs-startup-hook
+          (lambda ()
+            (message "*** Emacs loaded in %s with %d garbage collections."
+                     (format "%.2f seconds"
+                             (float-time
+                              (time-subtract after-init-time before-init-time)))
+                     gcs-done)))
+#+end_src
+* Initialize Package sources
+#+begin_src emacs-lisp
+  (require 'package)
+  (setq package-archives '(("melpa" . "https://melpa.org/packages/")
+                         ("elpa" . "https://elpa.gnu.org/packages/")
+                         ("org" . "https://orgmode.org/elpa/")))
+
+  (package-initialize)
+  (unless (package-installed-p 'use-package)
+    (package-refresh-contents)
+    (package-install 'use-package))
+
+  (require 'use-package)
+  (setq use-package-always-ensure t)
+#+end_src
+* Variables
+#+begin_src emacs-lisp
+  (defvar jemacs/default-font-size 100)
+  ;; Use this folder as the Emacs configuraton folder
+  (setq user-emacs-directory "~/.emacs.d/user-emacs-directory/")
+  (customize-set-value 'custom-theme-directory "~/.emacs.d/themes")
+
+  (setq jemacs/default-font-size 100)
+  (setq jemacs/default-variable-font-size 140)
+#+end_src
+* Genral Settings
+** General
+#+begin_src emacs-lisp
+  (electric-pair-mode 1)
+
+  (setq-default truncate-lines 1)
+  ;; Disable line numbers for some modes
+  (dolist (mode '(org-mode-hook
+                  term-mode-hook
+                  shell-mode-hook
+                  eshell-mode-hook))
+          (add-hook mode (lambda () (display-line-numbers-mode 0))))
+#+end_src
+** Key Binding Configuration
+#+begin_src emacs-lisp
+  ;; Make ESC quit prompts
+  ;; (global-set-key (kbd "<escape>") 'keyboard-escape-quit)
+  ;; Toggle bracket matching
+  (global-set-key (kbd "C-]") 'electric-pair-mode)
+#+end_src
+** Theming
+#+begin_src emacs-lisp
+  (scroll-bar-mode -1)        ; Disable visible scrollbar
+  (tool-bar-mode -1)          ; Disable the toolbar
+  (tooltip-mode -1)           ; Disable tooltips
+  (set-fringe-mode 10)        ; Give some breathing room
+  (menu-bar-mode -1)          ; Disable the menu bar
+  (show-paren-mode 1)         ; Show the matching parenthesis
+  (global-visual-line-mode t) ; Visual line mode everywhere, please
+  (setq visible-bell t)       ; Set up the visible bell
+  (load-theme 'arc-dark t)
+
+  (use-package all-the-icons)
+
+  (set-face-attribute 'default nil :font "monospace" :height jemacs/default-font-size)
+  ;; (use-package all-the-icons)
+
+  ;; (use-package doom-modeline
+  ;;       :ensure t
+  ;;       :init (doom-modeline-mode 1)
+  ;;       :custom ((doom-modeline-height 15)))
+
+#+end_src
+** Temp Files
+#+begin_src emacs-lisp
+  ;;(setq backup-directory-alist `(("." . ,(expand-file-name "tmp/backups/" user-emacs-directory))))
+  (setq create-lockfiles nil)
+  (setq auto-save-default nil)
+  (setq make-backup-files nil)
+  (setq auto-save-default nil)
+#+end_src
+** Indentation
+#+begin_src emacs-lisp
+  (setq custom-tab-width 4) 
+  (defun disable-tabs () (setq indent-tabs-mode nil))
+  (defun enable-tabs ()
+    (setq indent-tabs-mode t)
+    (setq tab-width custom-tab-width))
+
+  (add-hook 'c-mode-hook 'enable-tabs)
+  (add-hook 'lisp-mode-hook 'disable-tabs)
+  (add-hook 'emacs-lisp-mode-hook 'disable-tabs)
+
+  (setq-default python-indent-offset custom-tab-width) ;; Python
+  (setq-default js-indent-level custom-tab-width)      ;; Javascript
+
+  ;; Making electric-indent behave sanely
+  (setq-default electric-indent-inhibit t)
+
+  ;; Make the backspace properly erase the tab instead of
+  ;; removing 1 space at a time.
+  (setq backward-delete-char-untabify-method 'hungry)
+
+  ;; (setq whitespace-style '(face tabs tab-mark trailing))
+  ;; (custom-set-faces
+  ;;  '(whitespace-tab ((t (:foreground "#636363")))))
+  ;; (setq whitespace-display-mappings
+  ;;   '((tab-mark 9 [124 9] [92 9]))) ; 124 is the ascii ID for '\|'
+  ;; (global
+  ;; -whitespace-mode) ; Enable whitespace mode everywhere
+#+end_src
+* Package Configuration
+** Auto-complete
+#+begin_src emacs-lisp
+  (use-package auto-complete
+    :defer
+    :ensure t
+    :init
+    (progn
+      (ac-config-default)
+      (global-auto-complete-mode t)))
+#+end_src
+** Org
+*** Appearance
+#+begin_src emacs-lisp
+  (require 'org-indent)
+  (setq org-startup-indented t)
+  (setq org-startup-folded t)
+  (set-default 'truncate-lines nil)
+  (set-default 'word-wrap t)
+  (setq org-startup-truncated nil)
+  (setq org-auto-align-tags nil)
+
+  ;; Bullets
+  (add-hook 'org-mode-hook	  
+            (lambda ()
+              (org-bullets-mode t)))
+  ;;(setq org-bullets-bullet-list (quote ("◉" "◆" "✚" "☀" "○")))
+
+
+  (setq org-checkbox-hierarchical-statistics nil)
+#+end_src
+*** To-Do
+#+begin_src emacs-lisp
+  (setq org-todo-keywords
+        (quote
+         ;;((sequence "TODO" "PROG" "PAUS" "|" "DONE" "CANC"))))
+         ((sequence "TODO" "WAITING" "|" "DONE" "CANC"))))
+  (setq org-todo-keyword-faces
+        ;;'(("PROG" . "orange") ("PAUS" . "magenta") ("CANC" . "red") ("DONE" . "green")))
+        '(("WAITING" . "magenta") ("CANC" . "red") ("DONE" . "green")))
+  (setq org-default-priority 72)
+  (setq org-highest-priority 65)
+  (setq org-lowest-priority 90)
+#+end_src
+*** Agenda
+#+begin_src emacs-lisp
+  (setq org-agenda-compact-blocks t)
+  (setq org-agenda-restore-windows-after-quit 0)
+  (setq org-agenda-default-appointment-duration 30)
+  (setq org-agenda-files '("~/.emacs.d/user-emacs-directory/org-files"))
+  (setq org-agenda-skip-deadline-if-done t)
+  (setq org-agenda-skip-scheduled-if-done t)
+  (setq org-agenda-span 20)
+  (setq org-deadline-warning-days 30)
+  (setq org-agenda-start-on-weekday nil)
+  (setq org-agenda-sorting-strategy
+        (quote
+         ((agenda priority-down alpha-up)
+          (todo priority-down alpha-up)
+          (tags priority-down alpha-up))))
+  (setq org-agenda-prefix-format
+        (quote
+         ((agenda . "%s %?-12t %e ")
+          (timeline . "  %s")
+          (todo . " %i %e ")
+          (tags . " %i %e ")
+          (search . " %i %e "))))
+  (setq org-columns-default-format
+        "%75ITEM %TODO %PRIORITY %SCHEDULED %DEADLINE %CLOSED %ALLTAGS")
+  (setq org-agenda-window-setup 'reorganize-frame)
+  (setq org-agenda-inhibit-startup t)
+#+end_src
+*** Export
+#+begin_src emacs-lisp
+  (setq org-html-htmlize-output-type 'css)
+  (setq org-html-html5-fancy t
+        org-html-doctype "html5")
+  (setq org-export-backends (quote (html icalendar md)))
+#+end_src
+*** Clocking
+#+begin_src emacs-lisp
+  (setq org-log-into-drawer "LOGBOOK")
+  (setq org-remember-clock-out-on-exit t)
+  (setq org-clock-clocked-in-display (quote both))
+#+end_src
+*** Misc
+#+begin_src emacs-lisp
+  (setq org-modules (quote (org-crypt org-habit org-mouse)))
+  (defun org-show-current-heading-tidily ()
+    (interactive)
+    "Show next entry, keeping other entries closed."
+    (if (save-excursion (end-of-line) (outline-invisible-p))
+        (progn (org-show-entry) (show-children))
+      (outline-back-to-heading)
+      (unless (and (bolp) (org-on-heading-p))
+        (org-up-heading-safe)
+        (hide-subtree)
+        (error "Boundary reached"))
+      (org-overview)
+      (org-reveal t)
+      (org-show-entry)
+      (show-children)))
+  (require 'org-download)
+  (setq-default org-download-image-dir "~/.emacs.d/user-emacs-directory/downloads/")
+  (require 'org-notifications)
+#+end_src
+** Dashboard
+#+begin_src emacs-lisp
+  (require 'dashboard)
+  (dashboard-setup-startup-hook)
+  (setq initial-buffer-choice (lambda () (get-buffer "*dashboard*")))
+  ;; Set the title
+  (setq dashboard-banner-logo-title "Welcome to Emacs!")
+  ;; Set the banner
+  (setq dashboard-startup-banner 'logo)
+  ;; Value can be
+  ;; 'official which displays the official emacs logo
+  ;; 'logo which displays an alternative emacs logo
+  ;; 1, 2 or 3 which displays one of the text banners
+  ;; "path/to/your/image.png" or "path/to/your/text.txt" which displays whatever image/text you would prefer
+  ;; Content is not centered by default. To center, set
+  (setq dashboard-center-content t)
+  (setq dashboard-set-file-icons nil)
+  ;; (setq dashboard-items '((recents  . 5)
+  ;;                          (projects . 5)
+  ;;                          (bookmarks . 5)
+  ;;                          (agenda . 5)))
+  (setq dashboard-items '()
+
+  ;;  (das
+    hboard-modify-heading-icons '((recents . "file-text")
+                                     (bookmarks . "book")))
+   (setq dashboard-set-navigator nil)
+#+end_src
+* Language Mode Settings
+** C
+#+begin_src emacs-lisp
+  (setq c-default-style "k&r"
+       c-tab-always-indent t)
+       ;;tab-width 8
+       ;;indent-tabs-mode t)
+
+  (defun cc-mode-compile-make ()
+    (interactive)
+    (setq compile-command "make all -C ../")
+    (call-interactively 'compile))
+  (defun cc-mode-compile-flash ()
+    (interactive)
+    (setq compile-command "make flash -C ../")
+    (call-interactively 'compile))
+  (defun cc-mode-compile-clean ()
+    (interactive)
+    (setq compile-command "make clean -C ../")
+    (call-interactively 'compile))
+  (defun cc-mode-compile-run ()
+    (interactive)
+    (setq compile-command "make run -C ../")
+    (call-interactively 'compile))
+  (defun cc-mode-compile ()
+    (local-set-key (kbd "C-c c") 'cc-mode-compile-make)
+    (local-set-key (kbd "C-c f") 'cc-mode-compile-flash)
+    (local-set-key (kbd "C-c x") 'cc-mode-compile-clean)
+    (local-set-key (kbd "C-c r") 'cc-mode-compile-run))
+
+  (add-hook 'c-mode-hook 'cc-mode-compile)
+#+end_src
+** Rust
+#+begin_src emacs-lisp
+  (require 'rust-mode)
+#+end_src
+** Python
+#+begin_src emacs-lisp
+  (setq elpy-rpc-python-command "python3")
+  (elpy-enable)
+  ;; Prevent Elpy from overriding standard cursor movements
+  (eval-after-load "elpy"
+    '(cl-dolist (key '("C-<left>" "C-<right>"))
+       (define-key elpy-mode-map (kbd key) nil)))
+
+  ;; Run black on save
+  (add-hook 'elpy-mode-hook (lambda ()
+    (add-hook 'before-save-hook 'elpy-black-fix-code nil t)))
+
+  ;; Set C-8 to format Python code
+  (global-set-key (kbd "C-8") 'elpy-black-fix-code)
+#+end_src
+** Haskell
+#+begin_src emacs-lisp
+  (require 'haskell-mode)
+  #+end_src
+** Forth
+#+begin_src emacs-lisp
+  (autoload 'forth-mode "gforth.el")
+  (autoload 'forth-block-mode "gforth.el")
+  (add-to-list 'auto-mode-alist '("\\.fs$" . forth-mode))
+#+end_src
+* Cleanup
+** Garbage collection
+#+begin_src emacs-lisp
+  ;; Lower threshold back to 8 MiB (default is 800kB)
+  (add-hook 'emacs-startup-hook
+            (lambda ()
+              (setq gc-cons-threshold (expt 2 23))))
+#+end_src
