@@ -40,7 +40,7 @@ This is my GNU Emacs configuration file - codenamed  JEmacs.
   (defvar jemacs/default-font-size 100)
   ;; Use this folder as the Emacs configuraton folder
   (setq user-emacs-directory "~/.emacs.d/user-emacs-directory/")
-  (customize-set-value 'custom-theme-directory "~/.emacs.d/themes")
+  (customize-set-value 'custom-theme-directory "~/.emacs.d/user-emacs-directory/themes")
 
   (setq jemacs/default-font-size 100)
   (setq jemacs/default-variable-font-size 140)
@@ -62,6 +62,7 @@ This is my GNU Emacs configuration file - codenamed  JEmacs.
 #+begin_src emacs-lisp
   ;; Make ESC quit prompts
   ;; (global-set-key (kbd "<escape>") 'keyboard-escape-quit)
+  
   ;; Toggle bracket matching
   (global-set-key (kbd "C-]") 'electric-pair-mode)
 #+end_src
@@ -240,6 +241,7 @@ This is my GNU Emacs configuration file - codenamed  JEmacs.
   ;; Set the title
   (setq dashboard-banner-logo-title "Welcome to Emacs!")
   ;; Set the banner
+  ;; (setq dashboard-startup-banner '"~/.emacs.d/user-emacs-directory/pictures/debian-logo.png")
   (setq dashboard-startup-banner 'logo)
   ;; Value can be
   ;; 'official which displays the official emacs logo
@@ -259,6 +261,16 @@ This is my GNU Emacs configuration file - codenamed  JEmacs.
     hboard-modify-heading-icons '((recents . "file-text")
                                      (bookmarks . "book")))
    (setq dashboard-set-navigator nil)
+#+end_src
+** Ivy
+#+begin_src emacs-lisp
+  ;; (use-package ivy)
+  (ivy-mode 1)
+#+end_src
+** Swiper
+#+begin_src emacs-lisp
+  ;;(use-package swiper)
+  (global-set-key (kbd "C-s") 'swiper)
 #+end_src
 * Language Mode Settings
 ** C
@@ -298,19 +310,7 @@ This is my GNU Emacs configuration file - codenamed  JEmacs.
 #+end_src
 ** Python
 #+begin_src emacs-lisp
-  (setq elpy-rpc-python-command "python3")
-  (elpy-enable)
-  ;; Prevent Elpy from overriding standard cursor movements
-  (eval-after-load "elpy"
-    '(cl-dolist (key '("C-<left>" "C-<right>"))
-       (define-key elpy-mode-map (kbd key) nil)))
-
-  ;; Run black on save
-  (add-hook 'elpy-mode-hook (lambda ()
-    (add-hook 'before-save-hook 'elpy-black-fix-code nil t)))
-
-  ;; Set C-8 to format Python code
-  (global-set-key (kbd "C-8") 'elpy-black-fix-code)
+  (use-package python-mode)
 #+end_src
 ** Haskell
 #+begin_src emacs-lisp
