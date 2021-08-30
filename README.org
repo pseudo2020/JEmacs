@@ -265,7 +265,7 @@ This is my GNU Emacs configuration file - codenamed  JEmacs.
 ** Ivy
 #+begin_src emacs-lisp
   ;; (use-package ivy)
-  (ivy-mode 1)
+  (ivy-mode 0)
 #+end_src
 ** Swiper
 #+begin_src emacs-lisp
